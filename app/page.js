@@ -1,11 +1,12 @@
 "use client"
 import Image from "next/image"
+import NextImage from "next/image"
 import {useState, useEffect} from "react"
 import {firestore} from "@/firebase"
 import {Box, Modal, Typography, Stack, TextField, Button} from "@mui/material"
 import {collection, deleteDoc, doc, getDoc, setDoc, getDocs, query} from "firebase/firestore"
-import * as cocoSsd from "@tensorflow-models/coco-ssd"
 import "@tensorflow/tfjs"
+import * as cocoSsd from "@tensorflow-models/coco-ssd"
 
 
 export default function Home() {
@@ -108,7 +109,7 @@ const handleCapture = async () => {
   canvas.width = video.videoWidth
   canvas.height = video.videoHeight
   const context = canvas.getContext("2d")
-  context.drawImage(video, 0, 0)
+  context.drawImage(video, 0, 0, canvas.width, canvas.height)
 
   const imageData = canvas.toDataURL("image/jpeg")
 
@@ -116,18 +117,22 @@ const handleCapture = async () => {
   // Option 1: YOLO with TensorFlow.js (coco-ssd)
   const loadModelAndIdentify = async (imageData) => {
     const model = await cocoSsd.load()
-    const img = new Image()
+    const img = new window.Image()
     img.src = imageData
     img.onload = async () => {
       const predictions = await model.detect(img)
       console.log(predictions)
       if (predictions.length > 0) {
-        addItem(predictions[0].class) // Adds the first detected item to inventory
+        const detectedItem = predictions[0].class // Get the detected class name
+        await addItem(detectedItem) // Add the item to inventory or increment quantity if it already exists
+      } else {
+        console.log("No objects recognized")
       }
     }
   }
 
   await loadModelAndIdentify(imageData)
+  
   setShowCamera(false)
   cameraStream.getTracks().forEach((track) => track.stop()) // Ensure all tracks are stopped
   setCameraStream(null)
@@ -167,7 +172,18 @@ useEffect(() => {
         sx={{
           transform: "translate(-50%,-50%)",
         }}
-      >
+      >      
+      
+      
+      <div>
+      {/* Use NextImage here for optimized image rendering */}
+      <NextImage src="/example.jpg" alt="Example" width={500} height={300} />
+
+      {/* Your other JSX code */}
+     </div>
+
+
+
         <Typography variant="h6">Add Item</Typography>
         <Stack width="100%" direction="row" spacing={2}>
           <TextField
@@ -201,7 +217,7 @@ useEffect(() => {
       </Button>
 
       <Button variant="contained" onClick={handleViewItem}>
-        View Item
+        View New Item
       </Button>
 
 
